@@ -14,6 +14,16 @@ a_L = 24*10**(-6)
 x = 0
 #theta = math.asin((c+x*(a*L/R))**2)
 
+def fringes_angle(x, n_):
+    return 2*d*(n_-1)*(np.cos(x*math.pi/180)-1)/(labda*(1-np.cos(x*math.pi/180)-n_))
+
+#curve_fit(func, xdata=temp_fringes[0][a:b], ydata=temp_fringes[1][a:b], p0 = start, maxfev=6000, absolute_sigma=True ,sigma = fringe_error)
+delta_theta = [2.5, 3.7, 3.5]
+fringes = [19, 26, 37]
+fringes_error = [2, 2, 2]
+popt, pcov = curve_fit(fringes_angle, xdata=delta_theta, ydata=fringes, p0=[1.5], maxfev=6000)#, absolute_sigma=True, sigma=fringes_error)
+print("boi", popt, np.sqrt(pcov[0]))
+n = popt[0]
 time_fringes = open("heatgun_3.txt", 'r')
 
 limits = [0.32, 0.8]
@@ -127,20 +137,22 @@ Graph.savefig("temperatuur_over_tijd.png")
 Graph.show()
 
 temp_fringes = [[], []]
+fringe_error = []
 for i in range(len(data[1][0])):
     rounded_time = int(round(data[1][0][i]*2))/2
     for j in range(len(time_temp[0])):
         if time_temp[0][j] == rounded_time:
             temp_fringes[0].append(time_temp[1][j])
             temp_fringes[1].append(fringes-data[1][1][i])
+            fringe_error.append(math.sqrt(fringes-data[1][1][i]))
             break
 
 #Graph.plot(temp_fringes[0], temp_fringes[1])
 #Graph.show()
 
-def func(x, alpha, c, d, theta_0):
+def func(x, alpha, c, e, theta_0):
     theta = np.arcsin((x-c)*alpha*L/R)
-    f = 2*d*(n-1)*(np.cos(theta+theta_0)-1)/(labda*(1-np.cos(theta +theta_0)-n)) + d
+    f = 2*d*(n-1)*(np.cos(theta+theta_0)-1)/(labda*(1-np.cos(theta +theta_0)-n)) + e
     return f
 
 #print(temp_fringes[0][0])
@@ -148,12 +160,11 @@ fractions = [3/4, 5/6]
 a = int(len(temp_fringes[0])*(1-fractions[1]))-1
 b = int(len(temp_fringes[0])*(1-fractions[0]))-1
 start = (a_L, 20, 40, 0)
-parameters_opt, cov_matrix = curve_fit(func, xdata=temp_fringes[0][a:b], ydata=temp_fringes[1][a:b], p0 = start, maxfev=6000)#absolute_sigma=True ,sigma = events_err)
+parameters_opt, cov_matrix = curve_fit(func, xdata=temp_fringes[0][a:b], ydata=temp_fringes[1][a:b], p0 = start, maxfev=6000) #absolute_sigma=True ,sigma = fringe_error[a:b])
 print(parameters_opt)
 print(cov_matrix)
-
 Graph.plot(temp_fringes[0], temp_fringes[1], label="metingen")
-Graph.plot([x for x in range(0, 120)], [func(x, parameters_opt[0], parameters_opt[1], parameters_opt[2], parameters_opt[3]) for x in range(0, 120)], label="fit")
+Graph.plot([x for x in range(0, 120)], [func(x, parameters_opt[0], parameters_opt[1], parameters_opt[2], parameters_opt[3]) for x in range(0, 120)], ':', label="fit")
 Graph.plot([temp_fringes[0][a], temp_fringes[0][a]], [0, 200], '--r', label="gekozen domein voor de fit")
 Graph.plot([temp_fringes[0][b], temp_fringes[0][b]], [0, 200], '--r')
 print(temp_fringes[0][a], temp_fringes[0][b])
